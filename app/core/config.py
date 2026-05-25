@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+
     APP_NAME: str
     DEBUG: bool
 
@@ -12,6 +13,11 @@ class Settings(BaseSettings):
     DB_PASSWORD: str
 
     OPENAI_API_KEY: str
+
+    EMAIL_ADDRESS: str
+    EMAIL_PASSWORD: str
+    IMAP_SERVER: str
+    IMAP_PORT: int
 
     class Config:
         env_file = ".env"
