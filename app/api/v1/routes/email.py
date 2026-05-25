@@ -1,5 +1,12 @@
 from fastapi import APIRouter
+
 from app.email.imap_client import connect_to_email
+from app.email.parser import (
+    decode_mime_words,
+    extract_email_body
+)
+
+import email
 
 router = APIRouter()
 
@@ -8,6 +15,7 @@ router = APIRouter()
 def fetch_emails():
 
     server = connect_to_email()
+    print("Selecting INBOX folder...")
 
     server.select_folder("INBOX")
 
@@ -17,22 +25,39 @@ def fetch_emails():
 
     for uid in messages:
 
-        message_data = server.fetch(
+        raw_message = server.fetch(
             [uid],
-            ["ENVELOPE"]
+            ["RFC822"]
         )
+        print(f"Fetched email UID: {uid}")
 
-        envelope = message_data[uid][b"ENVELOPE"]
+        raw_email = raw_message[uid][b"RFC822"]
 
-        subject = envelope.subject.decode()
+        message = email.message_from_bytes(raw_email)
 
-        sender = envelope.from_[0].mailbox.decode()
+        subject = decode_mime_words(
+            message["Subject"]
+        )
+        print(f"Decoded subject: {subject}")
 
-        email_list.append({
+        sender = message["From"]
+        print(f"Email sender: {sender}")
+
+        body = extract_email_body(message)
+        print(f"Extracted body for UID {uid}: {body[:500]}")
+        print(f"\nProcessing email UID: {uid}")
+
+        email_data = {
             "uid": uid,
             "subject": subject,
-            "sender": sender
-        })
+            "sender": sender,
+            "body": body[:500]
+        }
+
+        print(email_data)
+
+        email_list.append(email_data)
+        print(f"Email UID {uid} processed.\n")
 
     server.logout()
 
